@@ -1,27 +1,27 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-import MainLayout from "./layouts/MainLayout";
-import OrganizerLayout from "./layouts/OrganizerLayout";
-import AdminLayout from "./layouts/AdminLayout";
+import MainLayout from "./layouts/MainLayout.jsx";
+import OrganizerLayout from "./layouts/OrganizerLayout.jsx";
+import AdminLayout from "./layouts/AdminLayout.jsx";
 
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Events from "./pages/Events";
-import EventDetails from "./pages/EventDetails";
-import Booking from "./pages/Booking";
-import Confirmation from "./pages/Confirmation";
-import MyTickets from "./pages/MyTickets";
+import Home from "./pages/Home.jsx";
+import Login from "./pages/Login.jsx";
+import Events from "./pages/Event.jsx";
+import EventDetails from "./pages/EventDetails.jsx";
+import Booking from "./pages/Booking.jsx";
+import Confirmation from "./pages/Confirmation.jsx";
+import MyTickets from "./pages/MyTickets.jsx";
 
-import Dashboard from "./pages/Organizer/Dashboard";
-import CreateEvent from "./pages/Organizer/CreateEvent";
-import ManageEvent from "./pages/Organizer/ManageEvent";
-import Registrations from "./pages/Organizer/Registrations";
-import CheckIn from "./pages/Organizer/CheckIn";
+import Dashboard from "./pages/Organizer/Dashboard.jsx";
+import CreateEvent from "./pages/Organizer/CreateEvent.jsx";
+import ManageEvent from "./pages/Organizer/ManageEvent.jsx";
+import Registrations from "./pages/Organizer/Registrations.jsx";
+import CheckIn from "./pages/Organizer/CheckIn.jsx";
 
-import ReviewEvents from "./pages/Admin/ReviewEvents";
-import ManageUsers from "./pages/Admin/ManageUsers";
-import Applications from "./pages/Admin/Applications";
-import Analytics from "./pages/Admin/Analytics";
+import ReviewEvents from "./pages/Admin/ReviewEvents.jsx";
+import ManageUsers from "./pages/Admin/ManageUsers.jsx";
+import Applications from "./pages/Admin/Applications.jsx";
+import Analytics from "./pages/Admin/Analytics.jsx";
 
 function App() {
   return (

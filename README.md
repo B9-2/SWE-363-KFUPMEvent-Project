@@ -4,7 +4,7 @@ A campus event management platform for King Fahd University of Petroleum and Min
 
 ## Features
 
-### Attendee
+### Attendeee
 - Browse and search events by title, tag, or category (Workshop, Career, Cultural, Competition, Sports, Seminar)
 - View event details including description, schedule, location, capacity, and policies
 - Book tickets with per-user quantity limits

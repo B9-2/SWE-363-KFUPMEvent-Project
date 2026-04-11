@@ -1,5 +1,5 @@
 import { formatDate, formatTime } from './helpers';
-
+import { qrDataUri } from './qr';
 
 function downloadBlob(filename, content, type) {
   const blob = new Blob([content], { type });
@@ -11,6 +11,15 @@ function downloadBlob(filename, content, type) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function toIcsDate(date, time) {
@@ -64,4 +73,50 @@ export async function shareEvent(event) {
 
   window.prompt('Copy this event link:', url);
   return 'prompted';
+}
+
+export function downloadTicket(booking, event, attendeeLabel) {
+  const qrUri = qrDataUri(booking.ticketCode, { moduleSize: 12, padding: 20 });
+  const html = `<!DOCTYPE html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <title>${escapeHtml(event.title)} Ticket</title>
+      <style>
+        body { font-family: Inter, Arial, sans-serif; margin: 0; background: #f3f4f6; color: #101828; }
+        .ticket { max-width: 760px; margin: 24px auto; background: #ffffff; border-radius: 32px; padding: 36px; box-shadow: 0 20px 50px rgba(16,24,40,.12); }
+        h1 { margin: 0 0 24px; font-size: 52px; }
+        .center { text-align: center; }
+        .event-title { font-size: 34px; font-weight: 700; margin-bottom: 12px; }
+        .meta { color: #475467; font-size: 20px; line-height: 1.6; }
+        .qr-wrap { background: #f8fafc; border-radius: 28px; padding: 28px; margin: 36px 0; text-align: center; }
+        .code { background: #eef4ff; border: 1px solid #b2ccff; color: #23479a; font-size: 22px; font-weight: 600; padding: 22px; border-radius: 22px; text-align: center; }
+        .hint { color: #475467; text-align: center; margin: 28px 0; font-size: 18px; }
+        .info { display: grid; gap: 10px; color: #344054; font-size: 18px; }
+      </style>
+    </head>
+    <body>
+      <div class="ticket">
+        <h1>Your Ticket</h1>
+        <div class="center">
+          <div class="event-title">${escapeHtml(event.title)}</div>
+          <div class="meta">${escapeHtml(`${new Date(`${event.date}T00:00:00`).toLocaleDateString('en-US')} at ${formatTime(event.time)}`)}</div>
+          <div class="meta">${escapeHtml(event.location)}</div>
+        </div>
+        <div class="qr-wrap">
+          <img src="${qrUri}" width="390" height="390" alt="QR code" />
+        </div>
+        <div class="code">${escapeHtml(booking.ticketCode)}</div>
+        <p class="hint">Present this QR code at the event entrance for check-in</p>
+        <div class="info">
+          <div><strong>Attendee:</strong> ${escapeHtml(attendeeLabel)}</div>
+          <div><strong>Date:</strong> ${escapeHtml(formatDate(event.date))}</div>
+          <div><strong>Time:</strong> ${escapeHtml(formatTime(event.time))}</div>
+          <div><strong>Location:</strong> ${escapeHtml(event.location)}</div>
+        </div>
+      </div>
+    </body>
+  </html>`;
+
+  downloadBlob(`${booking.ticketCode}.html`, html, 'text/html');
 }

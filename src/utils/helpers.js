@@ -5,6 +5,12 @@ export const formatDate = (value) =>
     year: 'numeric'
   }).format(new Date(value));
 
+export const formatShortDate = (value) =>
+  new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(new Date(value));
 
 export const formatTime = (value) => {
   const [hours, minutes] = value.split(':');
@@ -24,6 +30,21 @@ export const getSeatInfo = (event) => {
   return { available, percent };
 };
 
+export const getStatusTone = (status) => {
+  const map = {
+    approved: 'success',
+    confirmed: 'success',
+    pending: 'warning',
+    draft: 'neutral',
+    rejected: 'danger',
+    cancelled: 'danger',
+    checked_in: 'success',
+    attendee: 'neutral',
+    organizer: 'info',
+    admin: 'purple'
+  };
+  return map[status] || 'neutral';
+};
 
 export const isPastEvent = (event) => new Date(`${event.date}T${event.time}:00`) < new Date('2026-04-10T19:00:00');
 

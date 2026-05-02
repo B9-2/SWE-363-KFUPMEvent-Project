@@ -1,10 +1,17 @@
 import express from "express";
 import cors from "cors";
+import dotenv from "dotenv";
 
+import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import ticketRoutes from "./routes/ticketRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import errorHandler from "./middleware/errorHandler.js";
+
+dotenv.config();
+
+connectDB();
 
 const app = express();
 
@@ -27,6 +34,8 @@ app.use((req, res) => {
     message: "Route not found",
   });
 });
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 

@@ -2,6 +2,10 @@
   "name": "campix-api",
   "private": true,
   "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",

@@ -13,8 +13,6 @@ dotenv.config();
 
 const app = express();
 
-connectDB();
-
 app.use(cors());
 app.use(express.json());
 
@@ -22,6 +20,15 @@ app.get("/", (req, res) => {
   res.status(200).json({
     message: "CampusEvents backend is running",
   });
+});
+
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.use("/api/auth", authRoutes);

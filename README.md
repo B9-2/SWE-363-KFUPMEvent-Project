@@ -96,6 +96,37 @@ npm run dev
 
 The app will be available at `http://localhost:5173`.
 
+### Backend Development
+
+Create a `.env` file from `.env.example`, then run:
+
+```bash
+npm run server
+```
+
+The backend will be available at `http://localhost:5050`.
+
+### Backend Deployment on Vercel
+
+Deploy the backend as a separate Vercel project using the `server` folder as the project root.
+
+In Vercel:
+
+- Set **Root Directory** to `server`
+- Set **Framework Preset** to `Other`
+- Add the environment variable `MONGO_URI` with your MongoDB Atlas connection string
+- Add `JWT_SECRET` if/when auth token signing is used
+- Deploy
+
+After deployment, test these URLs:
+
+```text
+https://your-backend.vercel.app/
+https://your-backend.vercel.app/api/auth
+https://your-backend.vercel.app/api/events
+```
+
+If MongoDB Atlas blocks the connection, add Vercel access in Atlas under **Network Access**. For coursework/testing, `0.0.0.0/0` is the simplest option, but a narrower allowlist is safer for production.
 
 ## Demo Accounts
 

@@ -1,25 +1,27 @@
 import { Link } from 'react-router-dom';
 import ThemeImage from './ThemeImage';
+import { useLanguage } from '../context/LanguageContext';
 import { eventDateTime, getSeatInfo } from '../utils/helpers';
 
 export default function EventCard({ event, compact = false, showStatus = false }) {
+  const { categoryLabel, eventText, language, statusLabel, t } = useLanguage();
   const seatInfo = getSeatInfo(event);
 
   return (
     <Link to={`/events/${event.id}`} className={`event-card event-card-link ${compact ? 'compact' : ''}`}>
-      <ThemeImage theme={event.coverTheme} title={event.title} imageData={event.imageData} />
+      <ThemeImage theme={event.coverTheme} title={eventText(event, 'title')} imageData={event.imageData} />
       <div className="event-card-body">
         <div className="event-card-head">
-          <h3>{event.title}</h3>
-          <span className="pill pill-soft">{event.category}</span>
+          <h3>{eventText(event, 'title')}</h3>
+          <span className="pill pill-soft">{categoryLabel(event.category)}</span>
         </div>
-        <p>{event.description}</p>
+        <p>{eventText(event, 'description')}</p>
         <ul className="event-meta-list">
-          <li>{eventDateTime(event)}</li>
-          <li>{event.location}</li>
+          <li>{eventDateTime(event, language)}</li>
+          <li>{eventText(event, 'location')}</li>
           <li>
-            {seatInfo.available} seats available
-            {showStatus && <span className={`status-tag status-${event.status}`}>{event.status}</span>}
+            {seatInfo.available} {t('seatsAvailable')}
+            {showStatus && <span className={`status-tag status-${event.status}`}>{statusLabel(event.status)}</span>}
           </li>
         </ul>
         <div className="progress-line">
@@ -27,9 +29,9 @@ export default function EventCard({ event, compact = false, showStatus = false }
         </div>
         <div className="event-footer">
           <small>
-            {event.registered} / {event.capacity} registered
+            {event.registered} / {event.capacity} {t('registered')}
           </small>
-          <span className="card-link-text">View Details</span>
+          <span className="card-link-text">{t('viewDetails')}</span>
         </div>
       </div>
     </Link>

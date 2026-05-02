@@ -1,15 +1,20 @@
-import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import QRCodePlaceholder from '../components/QRCodePlaceholder';
 import { useApp } from '../context/AppContext';
+import { useLanguage } from '../context/LanguageContext';
 import { downloadEventCalendar, downloadTicket } from '../utils/actions';
 import { formatDate, formatTime, getStatusTone, isPastEvent } from '../utils/helpers';
 
 export function TicketsPage() {
   const { userBookings, events, cancelBooking } = useApp();
+  const { eventText, language, statusLabel, t } = useLanguage();
   const [tab, setTab] = useState('upcoming');
 
-  const allMapped = useMemo(() => userBookings.map((booking) => ({ booking, event: events.find((item) => item.id === booking.eventId) })).filter((item) => item.event), [events, userBookings]);
+  const allMapped = useMemo(
+    () => userBookings.map((booking) => ({ booking, event: events.find((item) => item.id === booking.eventId) })).filter((item) => item.event),
+    [events, userBookings]
+  );
 
   const mapped = useMemo(() => {
     return allMapped.filter(({ booking, event }) => {
@@ -27,25 +32,25 @@ export function TicketsPage() {
 
   return (
     <section className="shell page-section">
-      <h1>My Tickets</h1>
+      <h1>{t('myTickets')}</h1>
       <div className="tabs">
         <button className={tab === 'upcoming' ? 'active' : ''} onClick={() => setTab('upcoming')}>
-          Upcoming ({counts.upcoming})
+          {t('upcoming')} ({counts.upcoming})
         </button>
         <button className={tab === 'past' ? 'active' : ''} onClick={() => setTab('past')}>
-          Past ({counts.past})
+          {t('past')} ({counts.past})
         </button>
         <button className={tab === 'cancelled' ? 'active' : ''} onClick={() => setTab('cancelled')}>
-          Cancelled ({counts.cancelled})
+          {t('cancelled')} ({counts.cancelled})
         </button>
       </div>
 
       {mapped.length === 0 ? (
         <div className="empty-card">
-          <h3>No tickets found</h3>
-          <p>You do not have any events in this tab.</p>
+          <h3>{t('noTicketsFound')}</h3>
+          <p>{t('noTicketsHint')}</p>
           <Link className="btn btn-primary" to="/">
-            Browse Events
+            {t('browseEvents')}
           </Link>
         </div>
       ) : (
@@ -54,23 +59,23 @@ export function TicketsPage() {
             <article key={booking.id} className="ticket-card">
               <div className={`ticket-preview ${event.coverTheme}`} />
               <div className="ticket-body">
-                <h3>{event.title}</h3>
-                <p>{formatDate(event.date)}</p>
-                <p>{formatTime(event.time)}</p>
-                <p>{event.location}</p>
+                <h3>{eventText(event, 'title')}</h3>
+                <p>{formatDate(event.date, language)}</p>
+                <p>{formatTime(event.time, language)}</p>
+                <p>{eventText(event, 'location')}</p>
                 <div className="ticket-row">
                   <span>
-                    {booking.quantity} {booking.quantity > 1 ? 'tickets' : 'ticket'}
+                    {booking.quantity} {booking.quantity > 1 ? t('tickets') : t('ticket')}
                   </span>
-                  <span className={`pill pill-${getStatusTone(booking.status)}`}>{booking.status}</span>
+                  <span className={`pill pill-${getStatusTone(booking.status)}`}>{statusLabel(booking.status)}</span>
                 </div>
                 <div className="ticket-actions">
                   <Link className="btn btn-primary wide" to={`/tickets/${booking.id}`}>
-                    View QR Code
+                    {t('viewQrCode')}
                   </Link>
                   {booking.status === 'confirmed' && !isPastEvent(event) && (
                     <button className="btn btn-outline wide" onClick={() => cancelBooking(booking.id)}>
-                      Cancel Ticket
+                      {t('cancelTicket')}
                     </button>
                   )}
                 </div>
@@ -87,6 +92,7 @@ export function TicketDetailsPage() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { userBookings, events, currentUser, cancelBooking, pushToast } = useApp();
+  const { eventText, language, t } = useLanguage();
   const booking = userBookings.find((item) => item.id === bookingId);
   const event = events.find((item) => item.id === booking?.eventId);
 
@@ -94,31 +100,40 @@ export function TicketDetailsPage() {
     return (
       <section className="shell page-section">
         <div className="empty-card">
-          <h2>Ticket not found</h2>
+          <h2>{t('ticketNotFound')}</h2>
           <button className="btn btn-primary" onClick={() => navigate('/tickets')}>
-            Back to My Tickets
+            {t('backToMyTickets')}
           </button>
         </div>
       </section>
     );
   }
 
-  const attendeeLabel = currentUser?.name || 'Attendee';
+  const attendeeLabel = currentUser?.name || t('attendee');
+  const localizedEvent = {
+    ...event,
+    title: eventText(event, 'title'),
+    description: eventText(event, 'description'),
+    longDescription: eventText(event, 'longDescription'),
+    location: eventText(event, 'location'),
+    language,
+    at: t('at')
+  };
 
   return (
     <section className="ticket-modal-shell">
       <div className="ticket-modal-card">
         <div className="ticket-modal-header">
-          <h1>Your Ticket</h1>
-          <button className="modal-close" onClick={() => navigate('/tickets')} aria-label="Close ticket view">
-            ×
+          <h1>{t('yourTicket')}</h1>
+          <button className="modal-close" onClick={() => navigate('/tickets')} aria-label={t('closeTicketView')}>
+            x
           </button>
         </div>
 
         <div className="ticket-modal-center">
-          <h2>{event.title}</h2>
-          <p>{new Date(`${event.date}T00:00:00`).toLocaleDateString('en-US')} at {formatTime(event.time)}</p>
-          <p>{event.location}</p>
+          <h2>{eventText(event, 'title')}</h2>
+          <p>{formatDate(event.date, language)} {t('at')} {formatTime(event.time, language)}</p>
+          <p>{eventText(event, 'location')}</p>
         </div>
 
         <div className="ticket-qr-panel">
@@ -126,26 +141,35 @@ export function TicketDetailsPage() {
         </div>
 
         <div className="ticket-code-box">{booking.ticketCode}</div>
-        <p className="ticket-instruction">Present this QR code at the event entrance for check-in</p>
+        <p className="ticket-instruction">{t('presentQr')}</p>
 
         <div className="ticket-modal-actions">
           <button
             className="btn btn-outline wide"
             onClick={() => {
-              downloadTicket(booking, event, attendeeLabel);
-              pushToast('Ticket downloaded.', 'success');
+              downloadTicket(booking, localizedEvent, attendeeLabel, {
+                yourTicket: t('yourTicket'),
+                presentQr: t('presentQr'),
+                attendee: t('attendee'),
+                date: t('date'),
+                time: t('time'),
+                location: t('location'),
+                at: t('at'),
+                language
+              });
+              pushToast(t('ticketDownloaded'), 'success');
             }}
           >
-            ⬇ Download Ticket
+            {t('downloadTicket')}
           </button>
           <button
             className="btn btn-outline wide"
             onClick={() => {
-              downloadEventCalendar(event);
-              pushToast('Calendar file downloaded.', 'success');
+              downloadEventCalendar(localizedEvent);
+              pushToast(t('calendarDownloaded'), 'success');
             }}
           >
-            Add to Calendar
+            {t('addToCalendar')}
           </button>
           {booking.status === 'confirmed' && !isPastEvent(event) && (
             <button
@@ -155,7 +179,7 @@ export function TicketDetailsPage() {
                 navigate('/tickets');
               }}
             >
-              Cancel Ticket
+              {t('cancelTicket')}
             </button>
           )}
         </div>

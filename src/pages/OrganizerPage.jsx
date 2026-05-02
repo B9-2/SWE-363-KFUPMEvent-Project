@@ -1,75 +1,86 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { formatDate, getStatusTone } from '../utils/helpers';
+import { useLanguage } from '../context/LanguageContext';
+import { formatDate, formatTime, getStatusTone } from '../utils/helpers';
+
+const coverThemes = [
+  ['theme-ai', 'technology'],
+  ['theme-career', 'career'],
+  ['theme-cultural', 'cultural'],
+  ['theme-startup', 'competition'],
+  ['theme-sports', 'sports'],
+  ['theme-environment', 'seminar']
+];
 
 export function OrganizerDashboardPage() {
   const { organizerEvents, analytics, submitEventForApproval } = useApp();
+  const { categoryLabel, eventText, language, statusLabel, t } = useLanguage();
 
   return (
     <section className="shell page-section">
-      <h1>Organizer Dashboard</h1>
-      <p className="muted strong">Manage your events, approvals, registrations, and drafts.</p>
+      <h1>{t('organizerDashboard')}</h1>
+      <p className="muted strong">{t('organizerDashboardSubtitle')}</p>
 
       <div className="stats-grid four-col">
-        <StatCard label="Active Events" value={organizerEvents.filter((event) => event.status === 'approved').length} />
-        <StatCard label="Pending Approval" value={analytics.organizerPending} tone="warning" />
-        <StatCard label="Total Registrations" value={analytics.organizerRegistrations} tone="info" />
-        <StatCard label="Drafts" value={analytics.organizerDrafts} tone="neutral" />
+        <StatCard label={t('activeEvents')} value={organizerEvents.filter((event) => event.status === 'approved').length} />
+        <StatCard label={t('pendingApproval')} value={analytics.organizerPending} tone="warning" />
+        <StatCard label={t('totalRegistrations')} value={analytics.organizerRegistrations} tone="info" />
+        <StatCard label={t('drafts')} value={analytics.organizerDrafts} tone="neutral" />
       </div>
 
       <div className="action-row">
         <Link className="btn btn-primary" to="/organizer/events/new">
-          + Create New Event
+          + {t('createNewEvent')}
         </Link>
       </div>
 
       <div className="table-card">
         <div className="table-header">
-          <h2>My Events</h2>
+          <h2>{t('myEvents')}</h2>
         </div>
         <div className="responsive-table">
           <table>
             <thead>
               <tr>
-                <th>Event</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Registrations</th>
-                <th>Actions</th>
+                <th>{t('event')}</th>
+                <th>{t('date')}</th>
+                <th>{t('status')}</th>
+                <th>{t('registrations')}</th>
+                <th>{t('actions')}</th>
               </tr>
             </thead>
             <tbody>
               {organizerEvents.map((event) => (
                 <tr key={event.id}>
                   <td>
-                    <strong>{event.title}</strong>
-                    <div className="subtext">{event.category}</div>
+                    <strong>{eventText(event, 'title')}</strong>
+                    <div className="subtext">{categoryLabel(event.category)}</div>
                   </td>
-                  <td>{formatDate(event.date)}</td>
+                  <td>{formatDate(event.date, language)}</td>
                   <td>
-                    <span className={`pill pill-${getStatusTone(event.status)}`}>{event.status}</span>
+                    <span className={`pill pill-${getStatusTone(event.status)}`}>{statusLabel(event.status)}</span>
                   </td>
                   <td>
                     {event.registered} / {event.capacity}
                   </td>
                   <td>
                     <div className="action-row compact-row">
-                      <Link className="icon-btn muted-btn" to={`/events/${event.id}`}>
-                        👁
+                      <Link className="btn btn-outline small" to={`/events/${event.id}`}>
+                        {t('view')}
                       </Link>
                       {event.status !== 'approved' && (
-                        <Link className="icon-btn muted-btn" to={`/organizer/events/${event.id}/edit`}>
-                          ✎
+                        <Link className="btn btn-outline small" to={`/organizer/events/${event.id}/edit`}>
+                          {t('edit')}
                         </Link>
                       )}
                       {event.status === 'draft' && (
                         <button className="btn btn-outline small" onClick={() => submitEventForApproval(event.id)}>
-                          Submit
+                          {t('submit')}
                         </button>
                       )}
-                      <Link className="icon-btn muted-btn" to={`/organizer/registrations/${event.id}`}>
-                        👥
+                      <Link className="btn btn-outline small" to={`/organizer/registrations/${event.id}`}>
+                        {t('registrations')}
                       </Link>
                     </div>
                   </td>
@@ -86,7 +97,8 @@ export function OrganizerDashboardPage() {
 export function OrganizerEventFormPage() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { events, saveEventDraft, submitEventForApproval } = useApp();
+  const { categories, events, saveEventDraft, submitEventForApproval } = useApp();
+  const { categoryLabel, language, t } = useLanguage();
   const existing = events.find((event) => event.id === id);
   const [error, setError] = useState('');
 
@@ -112,7 +124,7 @@ export function OrganizerEventFormPage() {
     }
   );
 
-  const steps = ['Basic Info', 'Schedule', 'Tickets', 'Review'];
+  const steps = [t('basicInfo'), t('schedule'), t('tickets'), t('review')];
 
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -120,7 +132,7 @@ export function OrganizerEventFormPage() {
     const file = event.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setError('Please choose an image file for the event cover.');
+      setError(t('imageFileError'));
       return;
     }
 
@@ -132,23 +144,22 @@ export function OrganizerEventFormPage() {
     reader.readAsDataURL(file);
   };
 
-
   const validateStep = (targetStep = step) => {
     if (targetStep === 1) {
       if (!form.title.trim() || !form.description.trim() || !form.longDescription.trim()) {
-        setError('Complete all required basic information fields.');
+        setError(t('completeBasicInfo'));
         return false;
       }
     }
     if (targetStep === 2) {
       if (!form.location.trim() || !form.date || !form.time) {
-        setError('Complete all required schedule fields.');
+        setError(t('completeSchedule'));
         return false;
       }
     }
     if (targetStep === 3) {
       if (Number(form.capacity) < 1 || Number(form.perUserLimit) < 1 || !form.policy.trim()) {
-        setError('Capacity, per-user limit, and event policy are required.');
+        setError(t('completeTicketPolicy'));
         return false;
       }
     }
@@ -165,7 +176,7 @@ export function OrganizerEventFormPage() {
   return (
     <section className="shell page-section">
       <div className="card form-card">
-        <h1>{existing ? 'Edit Event' : 'Create New Event'}</h1>
+        <h1>{existing ? t('editEvent') : t('createNewEvent')}</h1>
         <div className="stepper">
           {steps.map((item, index) => (
             <button key={item} className={step === index + 1 ? 'active' : ''} onClick={() => setStep(index + 1)}>
@@ -177,26 +188,23 @@ export function OrganizerEventFormPage() {
         {step === 1 && (
           <div className="form-grid two-col">
             <label>
-              Event Title*
+              {t('eventTitle')}*
               <input required value={form.title} onChange={(event) => update('title', event.target.value)} />
             </label>
             <label>
-              Category*
+              {t('category')}*
               <select value={form.category} onChange={(event) => update('category', event.target.value)}>
-                <option>Workshop</option>
-                <option>Career</option>
-                <option>Cultural</option>
-                <option>Competition</option>
-                <option>Sports</option>
-                <option>Seminar</option>
+                {categories.map((item) => (
+                  <option key={item} value={item}>{categoryLabel(item)}</option>
+                ))}
               </select>
             </label>
             <label className="full-span">
-              Short Description*
+              {t('shortDescription')}*
               <textarea rows="3" required value={form.description} onChange={(event) => update('description', event.target.value)} />
             </label>
             <label className="full-span">
-              Long Description*
+              {t('longDescription')}*
               <textarea rows="5" required value={form.longDescription} onChange={(event) => update('longDescription', event.target.value)} />
             </label>
           </div>
@@ -205,30 +213,30 @@ export function OrganizerEventFormPage() {
         {step === 2 && (
           <div className="form-grid two-col">
             <label>
-              Date*
+              {t('date')}*
               <input type="date" required value={form.date} onChange={(event) => update('date', event.target.value)} />
             </label>
             <label>
-              Time*
+              {t('time')}*
               <input type="time" required value={form.time} onChange={(event) => update('time', event.target.value)} />
             </label>
             <label className="full-span">
-              Location*
-              <input required value={form.location} onChange={(event) => update('location', event.target.value)} placeholder="Building/Room or Online link" />
+              {t('location')}*
+              <input required value={form.location} onChange={(event) => update('location', event.target.value)} placeholder={t('locationPlaceholder')} />
             </label>
             <label>
-              Visibility
+              {t('visibility')}
               <select value={form.visibility} onChange={(event) => update('visibility', event.target.value)}>
-                <option value="university">University</option>
-                <option value="public">Public</option>
+                <option value="university">{t('university')}</option>
+                <option value="public">{t('public')}</option>
               </select>
             </label>
             <label>
-              Event Mode
+              {t('eventMode')}
               <select value={form.mode} onChange={(event) => update('mode', event.target.value)}>
-                <option>Offline</option>
-                <option>Online</option>
-                <option>Hybrid</option>
+                <option value="Offline">{t('offline')}</option>
+                <option value="Online">{t('online')}</option>
+                <option value="Hybrid">{t('hybrid')}</option>
               </select>
             </label>
           </div>
@@ -237,47 +245,44 @@ export function OrganizerEventFormPage() {
         {step === 3 && (
           <div className="form-grid two-col">
             <label>
-              Capacity*
+              {t('capacity')}*
               <input type="number" min="1" required value={form.capacity} onChange={(event) => update('capacity', Number(event.target.value))} />
             </label>
             <label>
-              Per-user Limit
+              {t('perUserLimit')}
               <input type="number" min="1" required value={form.perUserLimit} onChange={(event) => update('perUserLimit', Number(event.target.value))} />
             </label>
             <label>
-              Price Type
+              {t('priceType')}
               <select value={form.priceType} onChange={(event) => update('priceType', event.target.value)}>
-                <option>Free</option>
-                <option>Paid</option>
+                <option value="Free">{t('free')}</option>
+                <option value="Paid">{t('paid')}</option>
               </select>
             </label>
             <label>
-              Cover Theme
+              {t('coverTheme')}
               <select value={form.coverTheme} onChange={(event) => update('coverTheme', event.target.value)}>
-                <option value="theme-ai">Technology</option>
-                <option value="theme-career">Career</option>
-                <option value="theme-cultural">Cultural</option>
-                <option value="theme-startup">Competition</option>
-                <option value="theme-sports">Sports</option>
-                <option value="theme-environment">Seminar</option>
+                {coverThemes.map(([value, labelKey]) => (
+                  <option key={value} value={value}>{t(labelKey)}</option>
+                ))}
               </select>
             </label>
             <label>
-              Event Picture
+              {t('eventPicture')}
               <input type="file" accept="image/*" onChange={handleImageUpload} />
-              <small className="subtext">Upload a cover image for this event card and details page.</small>
+              <small className="subtext">{t('uploadCoverHint')}</small>
             </label>
             {form.imageData && (
               <div className="full-span image-upload-preview">
-                <img src={form.imageData} alt="Event cover preview" />
+                <img src={form.imageData} alt={t('eventPicture')} />
               </div>
             )}
             <label className="full-span">
-              Tags
-              <input value={form.tags} onChange={(event) => update('tags', event.target.value)} placeholder="AI, Campus, Workshop" />
+              {t('tags')}
+              <input value={form.tags} onChange={(event) => update('tags', event.target.value)} placeholder={t('tagsPlaceholder')} />
             </label>
             <label className="full-span">
-              Event Policy*
+              {t('eventPolicy')}*
               <textarea rows="4" required value={form.policy} onChange={(event) => update('policy', event.target.value)} />
             </label>
           </div>
@@ -285,18 +290,18 @@ export function OrganizerEventFormPage() {
 
         {step === 4 && (
           <div className="review-box">
-            <h3>{form.title || 'Untitled event'}</h3>
-            <p>{form.description || 'Add a short description.'}</p>
+            <h3>{form.title || t('untitledEvent')}</h3>
+            <p>{form.description || t('addShortDescription')}</p>
             {form.imageData && (
               <div className="image-upload-preview review-image">
-                <img src={form.imageData} alt="Event cover preview" />
+                <img src={form.imageData} alt={t('eventPicture')} />
               </div>
             )}
             <ul className="event-meta-list">
-              <li>{form.date} at {form.time}</li>
-              <li>{form.location || 'Set a location'}</li>
-              <li>{form.capacity} seats · {form.visibility}</li>
-              <li>Tags: {typeof form.tags === 'string' ? form.tags : form.tags.join(', ')}</li>
+              <li>{formatDate(form.date, language)} {t('at')} {formatTime(form.time, language)}</li>
+              <li>{form.location || t('setLocation')}</li>
+              <li>{form.capacity} {t('seatsAvailable')} / {form.visibility}</li>
+              <li>{t('tags')}: {typeof form.tags === 'string' ? form.tags : form.tags.join(', ')}</li>
             </ul>
           </div>
         )}
@@ -305,11 +310,11 @@ export function OrganizerEventFormPage() {
 
         <div className="action-row wrap-row">
           <button className="btn btn-outline" onClick={handleSave}>
-            Save Draft
+            {t('saveDraft')}
           </button>
           {step > 1 && (
             <button className="btn btn-outline" onClick={() => setStep((value) => value - 1)}>
-              Previous
+              {t('previous')}
             </button>
           )}
           {step < 4 ? (
@@ -319,7 +324,7 @@ export function OrganizerEventFormPage() {
                 if (validateStep(step)) setStep((value) => value + 1);
               }}
             >
-              Next
+              {t('next')}
             </button>
           ) : (
             <button
@@ -331,7 +336,7 @@ export function OrganizerEventFormPage() {
                 navigate('/organizer/dashboard');
               }}
             >
-              Submit for Approval
+              {t('submitForApproval')}
             </button>
           )}
         </div>
@@ -343,6 +348,7 @@ export function OrganizerEventFormPage() {
 export function OrganizerRegistrationsPage() {
   const { eventId } = useParams();
   const { events, bookings, users, checkInBooking } = useApp();
+  const { eventText, t } = useLanguage();
   const [query, setQuery] = useState('');
   const event = events.find((item) => item.id === eventId);
 
@@ -360,7 +366,7 @@ export function OrganizerRegistrationsPage() {
   }, [bookings, eventId, query, users]);
 
   if (!event) {
-    return <section className="shell page-section"><div className="empty-card">Event not found.</div></section>;
+    return <section className="shell page-section"><div className="empty-card">{t('eventNotFound')}</div></section>;
   }
 
   return (
@@ -368,12 +374,12 @@ export function OrganizerRegistrationsPage() {
       <div className="table-card">
         <div className="table-header split-heading">
           <div>
-            <h1>Organizer - Registrations & Check-in</h1>
-            <p>{event.title}</p>
+            <h1>{t('registrationsCheckIn')}</h1>
+            <p>{eventText(event, 'title')}</p>
           </div>
           <div className="action-row">
-            <button className="btn btn-outline">Scan QR</button>
-            <button className="btn btn-outline">Export CSV</button>
+            <button className="btn btn-outline">{t('scanQr')}</button>
+            <button className="btn btn-outline">{t('exportCsv')}</button>
           </div>
         </div>
 
@@ -381,18 +387,18 @@ export function OrganizerRegistrationsPage() {
           className="search-input"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search attendee by name / ID / ticket code"
+          placeholder={t('searchAttendeePlaceholder')}
         />
 
         <div className="responsive-table">
           <table>
             <thead>
               <tr>
-                <th>Name</th>
-                <th>University ID</th>
-                <th>Ticket</th>
-                <th>Status</th>
-                <th>Action</th>
+                <th>{t('name')}</th>
+                <th>{t('universityId')}</th>
+                <th>{t('ticket')}</th>
+                <th>{t('status')}</th>
+                <th>{t('action')}</th>
               </tr>
             </thead>
             <tbody>
@@ -401,10 +407,10 @@ export function OrganizerRegistrationsPage() {
                   <td>{attendee?.name}</td>
                   <td>{attendee?.universityId}</td>
                   <td>{booking.ticketCode}</td>
-                  <td>{booking.checkedIn ? 'Checked-in' : 'Not in'}</td>
+                  <td>{booking.checkedIn ? t('checkedIn') : t('notIn')}</td>
                   <td>
                     <button className="btn btn-outline small" disabled={booking.checkedIn} onClick={() => checkInBooking(booking.id)}>
-                      {booking.checkedIn ? 'Done' : 'Check-in'}
+                      {booking.checkedIn ? t('done') : t('checkIn')}
                     </button>
                   </td>
                 </tr>

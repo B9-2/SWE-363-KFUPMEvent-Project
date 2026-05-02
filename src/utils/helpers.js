@@ -1,28 +1,34 @@
-export const formatDate = (value) =>
-  new Intl.DateTimeFormat('en-US', {
+export const getLocale = (language) => {
+  if (language) return language === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US';
+  if (typeof document === 'undefined') return 'en-US';
+  return document.documentElement.lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US';
+};
+
+export const formatDate = (value, language) =>
+  new Intl.DateTimeFormat(getLocale(language), {
     month: 'long',
     day: 'numeric',
     year: 'numeric'
   }).format(new Date(value));
 
-export const formatShortDate = (value) =>
-  new Intl.DateTimeFormat('en-US', {
+export const formatShortDate = (value, language) =>
+  new Intl.DateTimeFormat(getLocale(language), {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
   }).format(new Date(value));
 
-export const formatTime = (value) => {
+export const formatTime = (value, language) => {
   const [hours, minutes] = value.split(':');
   const date = new Date();
   date.setHours(Number(hours), Number(minutes));
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(getLocale(language), {
     hour: 'numeric',
     minute: '2-digit'
   }).format(date);
 };
 
-export const eventDateTime = (event) => `${formatDate(event.date)} · ${formatTime(event.time)}`;
+export const eventDateTime = (event, language) => `${formatDate(event.date, language)} / ${formatTime(event.time, language)}`;
 
 export const getSeatInfo = (event) => {
   const available = Math.max(event.capacity - event.registered, 0);

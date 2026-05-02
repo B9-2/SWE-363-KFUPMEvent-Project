@@ -55,9 +55,11 @@ export function downloadEventCalendar(event) {
 
 export async function shareEvent(event) {
   const url = window.location.href;
+  const language = event.language;
+  const at = event.at || 'at';
   const payload = {
     title: event.title,
-    text: `${event.title} — ${formatDate(event.date)} at ${formatTime(event.time)} — ${event.location}`,
+    text: `${event.title} - ${formatDate(event.date, language)} ${at} ${formatTime(event.time, language)} - ${event.location}`,
     url
   };
 
@@ -75,15 +77,26 @@ export async function shareEvent(event) {
   return 'prompted';
 }
 
-export function downloadTicket(booking, event, attendeeLabel) {
+export function downloadTicket(booking, event, attendeeLabel, labels = {}) {
+  const text = {
+    yourTicket: 'Your Ticket',
+    presentQr: 'Present this QR code at the event entrance for check-in',
+    attendee: 'Attendee',
+    date: 'Date',
+    time: 'Time',
+    location: 'Location',
+    at: 'at',
+    language: undefined,
+    ...labels
+  };
   const qrUri = qrDataUri(booking.ticketCode, { moduleSize: 12, padding: 20 });
   const html = `<!DOCTYPE html>
-  <html lang="en">
+  <html lang="${text.language === 'ar' ? 'ar' : 'en'}" dir="${text.language === 'ar' ? 'rtl' : 'ltr'}">
     <head>
       <meta charset="UTF-8" />
       <title>${escapeHtml(event.title)} Ticket</title>
       <style>
-        body { font-family: Inter, Arial, sans-serif; margin: 0; background: #f3f4f6; color: #101828; }
+        body { font-family: Arial, sans-serif; margin: 0; background: #f3f4f6; color: #101828; }
         .ticket { max-width: 760px; margin: 24px auto; background: #ffffff; border-radius: 32px; padding: 36px; box-shadow: 0 20px 50px rgba(16,24,40,.12); }
         h1 { margin: 0 0 24px; font-size: 52px; }
         .center { text-align: center; }
@@ -97,22 +110,22 @@ export function downloadTicket(booking, event, attendeeLabel) {
     </head>
     <body>
       <div class="ticket">
-        <h1>Your Ticket</h1>
+        <h1>${escapeHtml(text.yourTicket)}</h1>
         <div class="center">
           <div class="event-title">${escapeHtml(event.title)}</div>
-          <div class="meta">${escapeHtml(`${new Date(`${event.date}T00:00:00`).toLocaleDateString('en-US')} at ${formatTime(event.time)}`)}</div>
+          <div class="meta">${escapeHtml(`${formatDate(event.date, text.language)} ${text.at} ${formatTime(event.time, text.language)}`)}</div>
           <div class="meta">${escapeHtml(event.location)}</div>
         </div>
         <div class="qr-wrap">
           <img src="${qrUri}" width="390" height="390" alt="QR code" />
         </div>
         <div class="code">${escapeHtml(booking.ticketCode)}</div>
-        <p class="hint">Present this QR code at the event entrance for check-in</p>
+        <p class="hint">${escapeHtml(text.presentQr)}</p>
         <div class="info">
-          <div><strong>Attendee:</strong> ${escapeHtml(attendeeLabel)}</div>
-          <div><strong>Date:</strong> ${escapeHtml(formatDate(event.date))}</div>
-          <div><strong>Time:</strong> ${escapeHtml(formatTime(event.time))}</div>
-          <div><strong>Location:</strong> ${escapeHtml(event.location)}</div>
+          <div><strong>${escapeHtml(text.attendee)}:</strong> ${escapeHtml(attendeeLabel)}</div>
+          <div><strong>${escapeHtml(text.date)}:</strong> ${escapeHtml(formatDate(event.date, text.language))}</div>
+          <div><strong>${escapeHtml(text.time)}:</strong> ${escapeHtml(formatTime(event.time, text.language))}</div>
+          <div><strong>${escapeHtml(text.location)}:</strong> ${escapeHtml(event.location)}</div>
         </div>
       </div>
     </body>

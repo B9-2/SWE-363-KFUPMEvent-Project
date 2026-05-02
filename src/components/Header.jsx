@@ -1,46 +1,51 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { useLanguage } from '../context/LanguageContext';
 
-function Brand() {
+function Brand({ t }) {
   return (
     <Link to="/" className="brand">
-      <div className="brand-icon">📅</div>
+      <div className="brand-icon">CE</div>
       <div>
         <strong>KFUPMEvents</strong>
-        <span>King Fahd University</span>
+        <span>{t('brandSubtitle')}</span>
       </div>
     </Link>
   );
 }
 
-function roleLabel(role) {
+function roleLabel(role, t) {
   const labels = {
-    attendee: 'Attendee',
-    organizer: 'Organizer',
-    admin: 'Admin'
+    attendee: t('attendee'),
+    organizer: t('organizer'),
+    admin: t('admin')
   };
   return labels[role] || role;
 }
 
 export default function Header() {
   const { currentUser, logout } = useApp();
+  const { language, t, toggleLanguage } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const primaryLinks = [{ label: 'Events', to: '/' }];
+  if (location.pathname === '/' && (!currentUser || currentUser.role === 'attendee')) return null;
 
-  if (currentUser?.role === 'attendee') primaryLinks.push({ label: 'My Tickets', to: '/tickets' });
-  if (currentUser?.role === 'organizer') primaryLinks.push({ label: 'Dashboard', to: '/organizer/dashboard' });
-  if (currentUser?.role === 'admin') primaryLinks.push({ label: 'Admin Panel', to: '/admin' });
+  const primaryLinks = [{ label: t('events'), to: '/' }];
+
+  if (currentUser?.role === 'attendee') primaryLinks.push({ label: t('myTickets'), to: '/tickets' });
+  if (currentUser?.role === 'organizer') primaryLinks.push({ label: t('dashboard'), to: '/organizer/dashboard' });
+  if (currentUser?.role === 'admin') primaryLinks.push({ label: t('adminPanel'), to: '/admin' });
 
   return (
     <header className="site-header">
       <div className="navbar shell">
-        <Brand />
+        <Brand t={t} />
 
-        <button className="menu-toggle" onClick={() => setMenuOpen((value) => !value)} aria-label="Open menu">
-          ☰
+        <button className="menu-toggle" onClick={() => setMenuOpen((value) => !value)} aria-label={t('openMenu')}>
+          {t('menu')}
         </button>
 
         <div className={`nav-group ${menuOpen ? 'open' : ''}`}>
@@ -53,25 +58,32 @@ export default function Header() {
           </nav>
 
           <div className="nav-actions">
+            <button className="language-toggle" type="button" onClick={toggleLanguage} aria-label={t('switchLanguage')}>
+              {language === 'en' ? 'AR' : 'EN'}
+            </button>
             {!currentUser ? (
               <button className="btn btn-primary" onClick={() => navigate('/login')}>
-                Sign In
+                {t('signIn')}
               </button>
             ) : (
               <>
                 <div className="user-chip">
-                  <strong>{currentUser.role === 'organizer' ? (currentUser.organization || 'Organizer Account') : `${roleLabel(currentUser.role)} Account`}</strong>
-                  <span>{roleLabel(currentUser.role)}</span>
+                  <strong>
+                    {currentUser.role === 'organizer'
+                      ? currentUser.organization || t('organizerAccount')
+                      : t(`${currentUser.role}Account`)}
+                  </strong>
+                  <span>{roleLabel(currentUser.role, t)}</span>
                 </div>
                 <button
                   className="icon-btn"
-                  aria-label="Sign out"
+                  aria-label={t('signOut')}
                   onClick={() => {
                     logout();
                     navigate('/');
                   }}
                 >
-                  ↗
+                  -&gt;
                 </button>
               </>
             )}

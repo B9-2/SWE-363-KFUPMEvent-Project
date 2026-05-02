@@ -6,6 +6,7 @@ import {
   organizerApplicationsSeed,
   usersSeed
 } from '../data/mockData';
+import { useLanguage } from './LanguageContext';
 import { isPastEvent, randomId } from '../utils/helpers';
 
 const AppContext = createContext(null);
@@ -54,6 +55,7 @@ const readStored = (key, fallback) => {
 };
 
 export function AppProvider({ children }) {
+  const { statusLabel, t } = useLanguage();
   const [users, setUsers] = useState(() => readStored(STORAGE_KEYS.users, usersSeed));
   const [events, setEvents] = useState(() => readStored(STORAGE_KEYS.events, eventsSeed));
   const [bookings, setBookings] = useState(() => readStored(STORAGE_KEYS.bookings, bookingsSeed));
@@ -117,16 +119,16 @@ export function AppProvider({ children }) {
   const loginAs = (role) => {
     const userId = demoAccounts[role];
     setCurrentUserId(userId);
-    pushToast(`Signed in as ${role}.`);
+    pushToast(`${t('signedInAs')} ${statusLabel(role)}.`);
   };
 
   const login = (email, password) => {
     const user = users.find((item) => item.email.toLowerCase() === email.toLowerCase());
-    if (!user) return { ok: false, message: 'No account was found for this email.' };
-    if (user.isBanned) return { ok: false, message: 'This account is currently disabled.' };
-    if (user.password !== password) return { ok: false, message: 'Invalid email or password.' };
+    if (!user) return { ok: false, message: t('noAccountFound') };
+    if (user.isBanned) return { ok: false, message: t('accountDisabled') };
+    if (user.password !== password) return { ok: false, message: t('invalidCredentials') };
     setCurrentUserId(user.id);
-    pushToast('Signed in successfully.');
+    pushToast(t('signedInSuccessfully'));
     return { ok: true, user };
   };
 
@@ -134,7 +136,7 @@ export function AppProvider({ children }) {
 
   const addBooking = (eventId, quantity) => {
     if (!currentUser) {
-      pushToast('Please sign in before booking.', 'danger');
+      pushToast(t('signInFirst'), 'danger');
       return { ok: false, reason: 'auth' };
     }
     if (currentUser.role !== 'attendee') return { ok: false, reason: 'role' };
@@ -165,7 +167,7 @@ export function AppProvider({ children }) {
 
     setBookings((prev) => [booking, ...prev]);
     setEvents((prev) => prev.map((item) => (item.id === eventId ? { ...item, registered: item.registered + quantity } : item)));
-    pushToast('Ticket reserved successfully.');
+    pushToast(t('ticketReserved'));
     return { ok: true, booking };
   };
 
@@ -179,7 +181,7 @@ export function AppProvider({ children }) {
         item.id === booking.eventId ? { ...item, registered: Math.max(item.registered - booking.quantity, 0) } : item
       )
     );
-    pushToast('Booking cancelled.', 'warning');
+    pushToast(t('bookingCancelled'), 'warning');
   };
 
   const saveEventDraft = (form, existingId = null) => {
@@ -188,7 +190,7 @@ export function AppProvider({ children }) {
       ...form,
       tags: typeof form.tags === 'string' ? form.tags.split(',').map((tag) => tag.trim()).filter(Boolean) : form.tags,
       organizerId: currentUser?.id || 'u-organizer',
-      organizerName: currentUser?.organization || 'Organizer Account',
+      organizerName: currentUser?.organization || t('organizerAccount'),
       status: form.status || 'draft',
       registrationDeadline: `${form.date || '2026-04-25'}T23:00:00`,
       cancellationDeadline: `${form.date || '2026-04-25'}T18:00:00`,
@@ -198,30 +200,30 @@ export function AppProvider({ children }) {
 
     if (existingId) {
       setEvents((prev) => prev.map((event) => (event.id === existingId ? { ...event, ...payload } : event)));
-      pushToast('Event updated.');
+      pushToast(t('eventUpdated'));
       return existingId;
     }
 
     const eventId = randomId('evt');
     setEvents((prev) => [{ ...payload, id: eventId }, ...prev]);
-    pushToast('Draft saved.');
+    pushToast(t('draftSaved'));
     return eventId;
   };
 
   const submitEventForApproval = (eventId) => {
     setEvents((prev) => prev.map((event) => (event.id === eventId ? { ...event, status: 'pending' } : event)));
-    pushToast('Event submitted for approval.', 'warning');
+    pushToast(t('eventSubmitted'), 'warning');
   };
 
   const reviewEvent = (eventId, decision) => {
     setEvents((prev) => prev.map((event) => (event.id === eventId ? { ...event, status: decision === 'approve' ? 'approved' : 'rejected' } : event)));
-    pushToast(`Event ${decision === 'approve' ? 'approved' : 'rejected'}.`, decision === 'approve' ? 'success' : 'danger');
+    pushToast(decision === 'approve' ? t('eventApproved') : t('eventRejected'), decision === 'approve' ? 'success' : 'danger');
   };
 
   const deleteEvent = (eventId) => {
     setEvents((prev) => prev.filter((event) => event.id !== eventId));
     setBookings((prev) => prev.filter((booking) => booking.eventId !== eventId));
-    pushToast('Event deleted.', 'danger');
+    pushToast(t('eventDeleted'), 'danger');
   };
 
   const reviewApplication = (applicationId, decision) => {
@@ -244,25 +246,25 @@ export function AppProvider({ children }) {
       ]);
     }
 
-    pushToast(`Application ${decision === 'approve' ? 'approved' : 'rejected'}.`, decision === 'approve' ? 'success' : 'danger');
+    pushToast(decision === 'approve' ? t('applicationApproved') : t('applicationRejected'), decision === 'approve' ? 'success' : 'danger');
   };
 
   const updateUserRole = (userId, role) => {
     if (userId === currentUserId && currentUser?.role === 'admin' && role !== 'admin') {
-      pushToast('Admin cannot demote the active account.', 'danger');
+      pushToast(t('adminCannotDemote'), 'danger');
       return;
     }
     setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, role } : user)));
-    pushToast('User role updated.');
+    pushToast(t('userRoleUpdated'));
   };
 
   const toggleBanUser = (userId) => {
     if (userId === currentUserId) {
-      pushToast('Admin cannot ban the active account.', 'danger');
+      pushToast(t('adminCannotBanSelf'), 'danger');
       return;
     }
     setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, isBanned: !user.isBanned } : user)));
-    pushToast('User status updated.', 'warning');
+    pushToast(t('userStatusUpdated'), 'warning');
   };
 
   const submitOrganizerApplication = (form) => {
@@ -282,12 +284,12 @@ export function AppProvider({ children }) {
       },
       ...prev
     ]);
-    pushToast('Organizer application submitted.');
+    pushToast(t('organizerApplicationSubmitted'));
   };
 
   const checkInBooking = (bookingId) => {
     setBookings((prev) => prev.map((booking) => (booking.id === bookingId ? { ...booking, checkedIn: true } : booking)));
-    pushToast('Checked-in successfully (time recorded).');
+    pushToast(t('checkedInSuccess'));
   };
 
   const analytics = useMemo(() => {

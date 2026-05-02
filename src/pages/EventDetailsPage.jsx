@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ThemeImage from '../components/ThemeImage';
 import { useApp } from '../context/AppContext';
+import { useLanguage } from '../context/LanguageContext';
 import { downloadEventCalendar, shareEvent } from '../utils/actions';
 import { eventDateTime, formatDate, formatTime, getSeatInfo } from '../utils/helpers';
 
@@ -9,6 +10,7 @@ export default function EventDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { events, currentUser, addBooking, pushToast } = useApp();
+  const { categoryLabel, eventText, language, t } = useLanguage();
   const [quantity, setQuantity] = useState(1);
   const [acceptPolicy, setAcceptPolicy] = useState(false);
   const [error, setError] = useState('');
@@ -17,14 +19,25 @@ export default function EventDetailsPage() {
   const event = events.find((item) => item.id === id);
   const seatInfo = useMemo(() => (event ? getSeatInfo(event) : null), [event]);
   const canBook = currentUser?.role === 'attendee';
+  const localizedEvent = event
+    ? {
+        ...event,
+        title: eventText(event, 'title'),
+        description: eventText(event, 'description'),
+        longDescription: eventText(event, 'longDescription'),
+        location: eventText(event, 'location'),
+        language,
+        at: t('at')
+      }
+    : null;
 
   if (!event) {
     return (
       <section className="shell page-section">
         <div className="empty-card">
-          <h2>Event not available</h2>
+          <h2>{t('eventNotAvailable')}</h2>
           <Link className="btn btn-primary" to="/">
-            Back to Events
+            {t('backToEvents')}
           </Link>
         </div>
       </section>
@@ -37,23 +50,23 @@ export default function EventDetailsPage() {
       return;
     }
     if (!canBook) {
-      setError('Only attendee accounts can reserve tickets.');
+      setError(t('onlyAttendeesReserve'));
       return;
     }
     if (!acceptPolicy) {
-      setError('Please agree to the event rules and cancellation policy.');
+      setError(t('agreePolicyError'));
       return;
     }
     const result = addBooking(event.id, quantity);
     if (!result.ok) {
       const messages = {
-        limit: 'Per-user limit reached for this event.',
-        capacity: 'This event is full.',
-        auth: 'Please sign in first.',
-        approval: 'Event is not open for booking yet.',
-        role: 'Only attendee accounts can reserve tickets.'
+        limit: t('limitReached'),
+        capacity: t('eventFull'),
+        auth: t('signInFirst'),
+        approval: t('bookingNotOpen'),
+        role: t('onlyAttendeesReserve')
       };
-      setError(messages[result.reason] || 'Booking failed.');
+      setError(messages[result.reason] || t('bookingFailed'));
       return;
     }
     setError('');
@@ -61,16 +74,16 @@ export default function EventDetailsPage() {
   };
 
   const handleAddToCalendar = () => {
-    downloadEventCalendar(event);
-    pushToast('Calendar file downloaded.', 'success');
+    downloadEventCalendar(localizedEvent);
+    pushToast(t('calendarDownloaded'), 'success');
   };
 
   const handleShareEvent = async () => {
     try {
-      const result = await shareEvent(event);
-      pushToast(result === 'shared' ? 'Event shared.' : 'Event link copied.', 'info');
+      const result = await shareEvent(localizedEvent);
+      pushToast(result === 'shared' ? t('eventShared') : t('eventLinkCopied'), 'info');
     } catch {
-      pushToast('Sharing was cancelled.', 'warning');
+      pushToast(t('sharingCancelled'), 'warning');
     }
   };
 
@@ -78,29 +91,29 @@ export default function EventDetailsPage() {
     <section className="shell page-section">
       <div className="detail-layout">
         <div className="detail-main card">
-          <ThemeImage theme={event.coverTheme} title={event.title} imageData={event.imageData} />
+          <ThemeImage theme={event.coverTheme} title={eventText(event, 'title')} imageData={event.imageData} />
           <div className="detail-body">
             <div className="detail-title-row">
               <div>
-                <h1>{event.title}</h1>
-                <p className="muted">Organized by {event.organizerName}</p>
+                <h1>{eventText(event, 'title')}</h1>
+                <p className="muted">{t('organizedBy')} {eventText(event, 'organizerName')}</p>
               </div>
-              <span className="pill pill-soft">{event.category}</span>
+              <span className="pill pill-soft">{categoryLabel(event.category)}</span>
             </div>
             <div className="detail-facts">
-              <span>{formatDate(event.date)}</span>
-              <span>{formatTime(event.time)}</span>
-              <span>{event.location}</span>
-              <span>{seatInfo.available} of {event.capacity} seats available</span>
+              <span>{formatDate(event.date, language)}</span>
+              <span>{formatTime(event.time, language)}</span>
+              <span>{eventText(event, 'location')}</span>
+              <span>{seatInfo.available} {t('of')} {event.capacity} {t('seatsAvailable')}</span>
             </div>
 
             <div className="detail-section">
-              <h3>About This Event</h3>
-              <p>{event.longDescription}</p>
+              <h3>{t('aboutThisEvent')}</h3>
+              <p>{eventText(event, 'longDescription')}</p>
             </div>
 
             <div className="detail-section">
-              <h3>Event Tags</h3>
+              <h3>{t('eventTags')}</h3>
               <div className="tag-row">
                 {event.tags.map((tag) => (
                   <span key={tag} className="pill pill-muted">
@@ -111,10 +124,10 @@ export default function EventDetailsPage() {
             </div>
 
             <div className="policy-box">
-              <h3>Event Policy</h3>
-              <p>{event.policy}</p>
-              <small>Registration closes: {formatDate(event.registrationDeadline)}</small>
-              <small>Cancellation deadline: {formatDate(event.cancellationDeadline)}</small>
+              <h3>{t('eventPolicy')}</h3>
+              <p>{eventText(event, 'policy')}</p>
+              <small>{t('registrationCloses')} {formatDate(event.registrationDeadline, language)}</small>
+              <small>{t('cancellationDeadline')} {formatDate(event.cancellationDeadline, language)}</small>
             </div>
           </div>
         </div>
@@ -122,44 +135,44 @@ export default function EventDetailsPage() {
         <aside className="detail-sidebar card">
           {bookingResult ? (
             <div className="success-panel">
-              <h3>You're registered!</h3>
+              <h3>{t('youreRegistered')}</h3>
               <button className="btn btn-primary wide" onClick={() => navigate(`/tickets/${bookingResult.id}`)}>
-                View My Ticket
+                {t('viewMyTicket')}
               </button>
             </div>
           ) : null}
 
           <div className="sidebar-block">
-            <h3>{eventDateTime(event)}</h3>
-            <p>{seatInfo.available} seats left</p>
+            <h3>{eventDateTime(event, language)}</h3>
+            <p>{seatInfo.available} {t('seatsLeft')}</p>
 
             {canBook ? (
               <>
                 <div className="qty-row">
-                  <button onClick={() => setQuantity((value) => Math.max(value - 1, 1))}>−</button>
+                  <button onClick={() => setQuantity((value) => Math.max(value - 1, 1))}>-</button>
                   <strong>{quantity}</strong>
                   <button onClick={() => setQuantity((value) => Math.min(value + 1, event.perUserLimit))}>+</button>
                 </div>
                 <label className="checkbox-row">
                   <input type="checkbox" checked={acceptPolicy} onChange={(event) => setAcceptPolicy(event.target.checked)} />
-                  <span>I agree to event rules and cancellation policy</span>
+                  <span>{t('agreePolicy')}</span>
                 </label>
                 <button className="btn btn-primary wide" onClick={handleBooking}>
-                  Book Ticket
+                  {t('bookTicket')}
                 </button>
               </>
             ) : (
               <div className="info-panel">
-                {currentUser ? 'Booking is available for attendee accounts only.' : 'Sign in with an attendee account to book this event.'}
+                {currentUser ? t('attendeeOnlyBooking') : t('signInToBook')}
               </div>
             )}
 
             {error && <div className="alert alert-danger">{error}</div>}
             <button className="btn btn-outline wide" onClick={handleAddToCalendar}>
-              Add to Calendar
+              {t('addToCalendar')}
             </button>
             <button className="btn btn-outline wide" onClick={handleShareEvent}>
-              Share Event
+              {t('shareEvent')}
             </button>
           </div>
         </aside>

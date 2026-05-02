@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { useLanguage } from '../context/LanguageContext';
 import { formatDate, getStatusTone } from '../utils/helpers';
 
 export default function AdminPage() {
@@ -15,10 +16,15 @@ export default function AdminPage() {
     updateUserRole,
     users
   } = useApp();
+  const { categoryLabel, eventText, language, statusLabel, t } = useLanguage();
   const [tab, setTab] = useState('reviews');
   const [query, setQuery] = useState('');
 
   const pendingEvents = events.filter((event) => event.status === 'pending');
+  const applicationTypeLabel = (type) => {
+    const map = { Club: t('club'), Department: t('department'), Unit: t('unit') };
+    return map[type] || type;
+  };
   const filteredUsers = useMemo(
     () => users.filter((user) => `${user.name} ${user.email} ${user.universityId}`.toLowerCase().includes(query.toLowerCase())),
     [query, users]
@@ -26,28 +32,28 @@ export default function AdminPage() {
 
   return (
     <section className="shell page-section">
-      <h1>Admin Dashboard</h1>
-      <p className="muted strong">Manage events, users, and organizer applications</p>
+      <h1>{t('adminDashboard')}</h1>
+      <p className="muted strong">{t('adminSubtitle')}</p>
 
       <div className="stats-grid four-col">
-        <StatCard label="Pending Events" value={analytics.pendingEvents} tone="warning" />
-        <StatCard label="Pending Applications" value={analytics.pendingApplications} tone="info" />
-        <StatCard label="Total Users" value={analytics.totalUsers} tone="purple" />
-        <StatCard label="All Events" value={analytics.totalEvents} tone="success" />
+        <StatCard label={t('pendingEvents')} value={analytics.pendingEvents} tone="warning" />
+        <StatCard label={t('pendingApplications')} value={analytics.pendingApplications} tone="info" />
+        <StatCard label={t('totalUsers')} value={analytics.totalUsers} tone="purple" />
+        <StatCard label={t('allEventsStat')} value={analytics.totalEvents} tone="success" />
       </div>
 
       <div className="tabs admin-tabs admin-tabs-4">
         <button className={tab === 'reviews' ? 'active' : ''} onClick={() => setTab('reviews')}>
-          Event Reviews ({pendingEvents.length})
+          {t('eventReviews')} ({pendingEvents.length})
         </button>
         <button className={tab === 'all-events' ? 'active' : ''} onClick={() => setTab('all-events')}>
-          All Events ({events.length})
+          {t('allEventsTab')} ({events.length})
         </button>
         <button className={tab === 'applications' ? 'active' : ''} onClick={() => setTab('applications')}>
-          Organizer Applications ({applications.filter((app) => app.status === 'pending').length})
+          {t('organizerApplications')} ({applications.filter((app) => app.status === 'pending').length})
         </button>
         <button className={tab === 'users' ? 'active' : ''} onClick={() => setTab('users')}>
-          User Management
+          {t('userManagement')}
         </button>
       </div>
 
@@ -57,33 +63,33 @@ export default function AdminPage() {
             <table>
               <thead>
                 <tr>
-                  <th>Event</th>
-                  <th>Organizer</th>
-                  <th>Date</th>
-                  <th>Capacity</th>
-                  <th>Actions</th>
+                  <th>{t('event')}</th>
+                  <th>{t('organizer')}</th>
+                  <th>{t('date')}</th>
+                  <th>{t('capacity')}</th>
+                  <th>{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {pendingEvents.map((event) => (
                   <tr key={event.id}>
                     <td>
-                      <strong>{event.title}</strong>
-                      <div className="subtext">{event.category}</div>
+                      <strong>{eventText(event, 'title')}</strong>
+                      <div className="subtext">{categoryLabel(event.category)}</div>
                     </td>
-                    <td>{event.organizerName}</td>
-                    <td>{formatDate(event.date)}</td>
+                    <td>{eventText(event, 'organizerName')}</td>
+                    <td>{formatDate(event.date, language)}</td>
                     <td>{event.capacity}</td>
                     <td>
                       <div className="action-row compact-row">
                         <Link className="icon-btn muted-btn" to={`/events/${event.id}`}>
-                          👁
+                          {t('view')}
                         </Link>
                         <button className="icon-btn success-btn" onClick={() => reviewEvent(event.id, 'approve')}>
-                          ✓
+                          {t('approve')}
                         </button>
                         <button className="icon-btn danger-btn" onClick={() => reviewEvent(event.id, 'reject')}>
-                          ✕
+                          {t('reject')}
                         </button>
                       </div>
                     </td>
@@ -101,32 +107,32 @@ export default function AdminPage() {
             <table>
               <thead>
                 <tr>
-                  <th>Event</th>
-                  <th>Organizer</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                  <th>Registrations</th>
-                  <th>Actions</th>
+                  <th>{t('event')}</th>
+                  <th>{t('organizer')}</th>
+                  <th>{t('status')}</th>
+                  <th>{t('date')}</th>
+                  <th>{t('registrations')}</th>
+                  <th>{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {events.map((event) => (
                   <tr key={event.id}>
                     <td>
-                      <strong>{event.title}</strong>
-                      <div className="subtext">{event.category}</div>
+                      <strong>{eventText(event, 'title')}</strong>
+                      <div className="subtext">{categoryLabel(event.category)}</div>
                     </td>
-                    <td>{event.organizerName}</td>
-                    <td><span className={`pill pill-${getStatusTone(event.status)}`}>{event.status}</span></td>
-                    <td>{formatDate(event.date)}</td>
+                    <td>{eventText(event, 'organizerName')}</td>
+                    <td><span className={`pill pill-${getStatusTone(event.status)}`}>{statusLabel(event.status)}</span></td>
+                    <td>{formatDate(event.date, language)}</td>
                     <td>{event.registered} / {event.capacity}</td>
                     <td>
                       <div className="action-row compact-row">
                         <Link className="icon-btn muted-btn" to={`/events/${event.id}`}>
-                          👁
+                          {t('view')}
                         </Link>
                         <button className="btn btn-outline small danger-text" onClick={() => deleteEvent(event.id)}>
-                          Delete
+                          {t('delete')}
                         </button>
                       </div>
                     </td>
@@ -144,11 +150,11 @@ export default function AdminPage() {
             <table>
               <thead>
                 <tr>
-                  <th>Applicant</th>
-                  <th>Organization</th>
-                  <th>Type</th>
-                  <th>Submitted</th>
-                  <th>Actions</th>
+                  <th>{t('applicant')}</th>
+                  <th>{t('organization')}</th>
+                  <th>{t('type')}</th>
+                  <th>{t('submitted')}</th>
+                  <th>{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -162,15 +168,15 @@ export default function AdminPage() {
                       <strong>{application.organization}</strong>
                       <div className="subtext">{application.advisorName}</div>
                     </td>
-                    <td>{application.type}</td>
+                    <td>{applicationTypeLabel(application.type)}</td>
                     <td>{application.submittedAt}</td>
                     <td>
                       <div className="action-row compact-row">
                         <button className="btn btn-primary small" onClick={() => reviewApplication(application.id, 'approve')}>
-                          Approve
+                          {t('approve')}
                         </button>
                         <button className="btn btn-outline small danger-text" onClick={() => reviewApplication(application.id, 'reject')}>
-                          Reject
+                          {t('reject')}
                         </button>
                       </div>
                     </td>
@@ -188,17 +194,17 @@ export default function AdminPage() {
             className="search-input"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search users by name or email..."
+            placeholder={t('searchUsersPlaceholder')}
           />
           <div className="responsive-table">
             <table>
               <thead>
                 <tr>
-                  <th>User</th>
-                  <th>KFUPM ID</th>
-                  <th>Role</th>
-                  <th>Organization</th>
-                  <th>Actions</th>
+                  <th>{t('user')}</th>
+                  <th>{t('kfupmId')}</th>
+                  <th>{t('role')}</th>
+                  <th>{t('organization')}</th>
+                  <th>{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -210,18 +216,18 @@ export default function AdminPage() {
                     </td>
                     <td>{user.universityId}</td>
                     <td>
-                      <span className={`pill pill-${getStatusTone(user.role)}`}>{user.role}</span>
+                      <span className={`pill pill-${getStatusTone(user.role)}`}>{statusLabel(user.role)}</span>
                     </td>
                     <td>{user.organization || '-'}</td>
                     <td>
                       <div className="action-row compact-row">
                         <select value={user.role} onChange={(event) => updateUserRole(user.id, event.target.value)}>
-                          <option value="attendee">Attendee</option>
-                          <option value="organizer">Organizer</option>
-                          <option value="admin">Admin</option>
+                          <option value="attendee">{t('attendee')}</option>
+                          <option value="organizer">{t('organizer')}</option>
+                          <option value="admin">{t('admin')}</option>
                         </select>
                         <button className="btn btn-outline small danger-text" onClick={() => toggleBanUser(user.id)}>
-                          {user.isBanned ? 'Unban' : 'Ban'}
+                          {user.isBanned ? t('unban') : t('ban')}
                         </button>
                       </div>
                     </td>

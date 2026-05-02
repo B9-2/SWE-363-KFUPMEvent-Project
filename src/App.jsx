@@ -12,6 +12,7 @@ import {
   OrganizerEventFormPage,
   OrganizerRegistrationsPage
 } from './pages/OrganizerPage';
+import TicketScannerPage from './pages/TicketScannerPage';
 import { TicketDetailsPage, TicketsPage } from './pages/TicketsPage';
 
 function ProtectedRoute({ roles, children }) {
@@ -76,6 +77,22 @@ export default function App() {
             element={
               <ProtectedRoute roles={['organizer']}>
                 <OrganizerRegistrationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/organizer/scanner"
+            element={
+              <ProtectedRoute roles={['organizer', 'admin']}>
+                <TicketScannerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/organizer/scanner/:eventId"
+            element={
+              <ProtectedRoute roles={['organizer', 'admin']}>
+                <TicketScannerPage />
               </ProtectedRoute>
             }
           />

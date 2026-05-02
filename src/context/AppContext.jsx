@@ -287,8 +287,60 @@ export function AppProvider({ children }) {
     pushToast(t('organizerApplicationSubmitted'));
   };
 
+  const validateTicket = (ticketCode, scopedEventId = '') => {
+    const normalizedCode = ticketCode.trim().toUpperCase();
+    if (!normalizedCode) return { ok: false, reason: 'empty' };
+
+    const booking = bookings.find((item) => item.ticketCode.toUpperCase() === normalizedCode);
+    if (!booking) return { ok: false, reason: 'notFound' };
+
+    const event = events.find((item) => item.id === booking.eventId);
+    if (!event) return { ok: false, reason: 'eventMissing', booking };
+
+    const attendee = users.find((item) => item.id === booking.userId);
+    const scannerCanAccess =
+      currentUser?.role === 'admin' ||
+      (currentUser?.role === 'organizer' && event.organizerId === currentUser.id);
+
+    if (!scannerCanAccess) return { ok: false, reason: 'notAllowed', booking, event, attendee };
+    if (scopedEventId && booking.eventId !== scopedEventId) return { ok: false, reason: 'wrongEvent', booking, event, attendee };
+    if (booking.status !== 'confirmed') return { ok: false, reason: 'cancelled', booking, event, attendee };
+
+    return { ok: true, booking, event, attendee };
+  };
+
+  const scanTicket = (ticketCode, scopedEventId = '') => {
+    const result = validateTicket(ticketCode, scopedEventId);
+
+    if (!result.ok) {
+      pushToast(t('ticketScanInvalid'), 'danger');
+      return result;
+    }
+
+    if (result.booking.checkedIn) {
+      pushToast(t('ticketAlreadyCheckedIn'), 'warning');
+      return { ...result, ok: false, reason: 'alreadyCheckedIn' };
+    }
+
+    const checkedInAt = new Date().toISOString();
+    setBookings((prev) =>
+      prev.map((booking) => (booking.id === result.booking.id ? { ...booking, checkedIn: true, checkedInAt } : booking))
+    );
+    pushToast(t('checkedInSuccess'));
+
+    return {
+      ...result,
+      booking: { ...result.booking, checkedIn: true, checkedInAt },
+      checkedInNow: true
+    };
+  };
+
   const checkInBooking = (bookingId) => {
-    setBookings((prev) => prev.map((booking) => (booking.id === bookingId ? { ...booking, checkedIn: true } : booking)));
+    setBookings((prev) =>
+      prev.map((booking) =>
+        booking.id === bookingId ? { ...booking, checkedIn: true, checkedInAt: booking.checkedInAt || new Date().toISOString() } : booking
+      )
+    );
     pushToast(t('checkedInSuccess'));
   };
 
@@ -339,6 +391,8 @@ export function AppProvider({ children }) {
     updateUserRole,
     toggleBanUser,
     submitOrganizerApplication,
+    validateTicket,
+    scanTicket,
     checkInBooking,
     pushToast
   };

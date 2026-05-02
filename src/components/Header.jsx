@@ -36,8 +36,14 @@ export default function Header() {
   const primaryLinks = [{ label: t('events'), to: '/' }];
 
   if (currentUser?.role === 'attendee') primaryLinks.push({ label: t('myTickets'), to: '/tickets' });
-  if (currentUser?.role === 'organizer') primaryLinks.push({ label: t('dashboard'), to: '/organizer/dashboard' });
-  if (currentUser?.role === 'admin') primaryLinks.push({ label: t('adminPanel'), to: '/admin' });
+  if (currentUser?.role === 'organizer') {
+    primaryLinks.push({ label: t('dashboard'), to: '/organizer/dashboard' });
+    primaryLinks.push({ label: t('scanTickets'), to: '/organizer/scanner' });
+  }
+  if (currentUser?.role === 'admin') {
+    primaryLinks.push({ label: t('adminPanel'), to: '/admin' });
+    primaryLinks.push({ label: t('scanTickets'), to: '/organizer/scanner' });
+  }
 
   return (
     <header className="site-header">

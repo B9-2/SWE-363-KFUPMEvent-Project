@@ -33,6 +33,9 @@ export function OrganizerDashboardPage() {
         <Link className="btn btn-primary" to="/organizer/events/new">
           + {t('createNewEvent')}
         </Link>
+        <Link className="btn btn-outline" to="/organizer/scanner">
+          {t('scanTickets')}
+        </Link>
       </div>
 
       <div className="table-card">
@@ -378,7 +381,7 @@ export function OrganizerRegistrationsPage() {
             <p>{eventText(event, 'title')}</p>
           </div>
           <div className="action-row">
-            <button className="btn btn-outline">{t('scanQr')}</button>
+            <Link className="btn btn-outline" to={`/organizer/scanner/${event.id}`}>{t('scanQr')}</Link>
             <button className="btn btn-outline">{t('exportCsv')}</button>
           </div>
         </div>
